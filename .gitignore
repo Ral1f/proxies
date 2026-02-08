@@ -1,0 +1,7 @@
+# local secrets
+proxies_config.py
+
+# python cache
+__pycache__/
+.pytest_cache/
+*.pyc
