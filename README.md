@@ -21,6 +21,18 @@
 - async-драйвер БД (`asyncpg` для PostgreSQL, `aiosqlite` для SQLite)
 - `pytest` и `pytest-asyncio` для тестов
 
+Установка пакета (editable, для разработки):
+
+```bash
+pip install -e "/home/alfred/Desktop/VS Code/trade_new/proxies"
+```
+
+Если используете PostgreSQL (`postgresql+asyncpg://...`), добавьте драйвер:
+
+```bash
+pip install -e "/home/alfred/Desktop/VS Code/trade_new/proxies[postgres]"
+```
+
 ## Конфигурация
 
 Конфигурация берется из:

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trade-proxy-pipeline"
+version = "0.1.0"
+description = "Async proxy pipeline for parsers: providers, updater, and DB-backed random proxy selection."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp>=3.9",
+    "SQLAlchemy>=2.0",
+    "aiosqlite>=0.19",
+]
+
+[project.optional-dependencies]
+postgres = ["asyncpg>=0.29"]
+test = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+proxy-pipeline-updater = "proxy_pipeline.updater:main"
+
+[tool.setuptools]
+py-modules = ["proxies_config"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["proxy_pipeline*"]

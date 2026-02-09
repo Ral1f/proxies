@@ -5,3 +5,8 @@ proxies_config.py
 __pycache__/
 .pytest_cache/
 *.pyc
+
+# packaging artifacts
+build/
+dist/
+*.egg-info/
