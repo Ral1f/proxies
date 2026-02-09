@@ -24,6 +24,23 @@ class ProxyClient:
     def available_providers(self):
         return sorted(self.pipeline.providers.keys())
 
+    async def ensure_provider(self, provider: Optional[str] = None):
+        available = self.available_providers()
+        if not available:
+            raise RuntimeError("В proxy_pipeline не настроен ни один провайдер")
+        if provider and provider not in available:
+            raise RuntimeError(
+                f"Провайдер '{provider}' не настроен. Доступно: {', '.join(available)}"
+            )
+
+    async def count_active_proxies(self, provider: Optional[str] = None) -> int:
+        return len(await self.repository.list_active(provider=provider))
+
+    async def initialize_for_parser(self, provider: Optional[str] = None) -> int:
+        await self.init_db()
+        await self.ensure_provider(provider=provider)
+        return await self.count_active_proxies(provider=provider)
+
     async def refresh_provider(self, provider_name: str) -> int:
         return await self.pipeline.sync_provider(provider_name)
 
@@ -44,6 +61,16 @@ class ProxyClient:
         if not proxy:
             return None
         return proxy.as_url() if as_url else proxy
+
+    async def get_random_proxy_or_raise(self, provider: Optional[str] = None, as_url: bool = True):
+        proxy = await self.get_random_proxy(provider=provider, as_url=as_url)
+        if proxy:
+            return proxy
+        provider_name = provider or "any"
+        raise RuntimeError(
+            f"Активные прокси не найдены для provider={provider_name}. "
+            "Запусти updater из proxy_pipeline."
+        )
 
     async def get_random_proxyline(self, as_url: bool = True):
         return await self.get_random_proxy("proxyline", as_url=as_url)
