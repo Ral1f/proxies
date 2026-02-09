@@ -18,6 +18,15 @@ class ProxyClient:
     async def init_db(self):
         await init_db(self.engine)
 
+    async def close(self):
+        await self.engine.dispose()
+
+    def available_providers(self):
+        return sorted(self.pipeline.providers.keys())
+
+    async def refresh_provider(self, provider_name: str) -> int:
+        return await self.pipeline.sync_provider(provider_name)
+
     async def refresh_proxyline(self) -> int:
         return await self.pipeline.sync_provider("proxyline")
 
