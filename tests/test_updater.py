@@ -4,7 +4,12 @@ import asyncio
 
 import pytest
 
-from proxy_pipeline.updater import ProxyUpdater, UpdaterOptions
+from proxy_pipeline.updater import (
+    DEFAULT_LOG_DIR,
+    ProxyUpdater,
+    UpdaterOptions,
+    build_parser,
+)
 
 
 class FakeClient:
@@ -66,3 +71,11 @@ async def test_run_forever_stops_on_event():
     await stopper
 
     assert updater.client.calls == [("all", None)]
+
+
+def test_build_parser_has_default_log_path():
+    parser = build_parser()
+    args = parser.parse_args([])
+
+    assert args.log_dir == DEFAULT_LOG_DIR
+    assert args.log_file == "proxy_pipeline_updater.log"

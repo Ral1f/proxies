@@ -103,6 +103,12 @@ python -m proxy_pipeline.updater --interval-seconds 300 --providers proxyline,pr
 - `--providers` - список провайдеров через запятую
 - `--deactivate-missing` - помечать отсутствующие прокси как `is_active=false`
 - `--lock-file` - lock-файл, не дает запустить второй updater-процесс
+- `--log-dir` - директория логов (по умолчанию `/home/trade/logs/others`)
+- `--log-file` - имя файла логов (по умолчанию `proxy_pipeline_updater.log`)
+
+По умолчанию updater пишет логи в:
+
+`/home/trade/logs/others/proxy_pipeline_updater.log`
 
 ## Использование в парсере
 

@@ -5,12 +5,15 @@ import asyncio
 import logging
 import signal
 from dataclasses import dataclass
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence
 
 from .client import ProxyClient, build_default_client
 
 logger = logging.getLogger(__name__)
+DEFAULT_LOG_DIR = "/home/trade/logs/others"
+DEFAULT_LOG_FILE = "proxy_pipeline_updater.log"
 
 
 @dataclass
@@ -107,6 +110,34 @@ def _setup_signals(stop_event: asyncio.Event):
             pass
 
 
+def _configure_logging(log_level: str, log_dir: str, log_file: str) -> Path:
+    level = getattr(logging, log_level.upper(), logging.INFO)
+    log_path = Path(log_dir) / log_file
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    fmt = "%(asctime)s %(levelname)s %(name)s: %(message)s"
+    formatter = logging.Formatter(fmt)
+
+    root = logging.getLogger()
+    root.setLevel(level)
+    root.handlers.clear()
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+    root.addHandler(stream_handler)
+
+    file_handler = RotatingFileHandler(
+        filename=log_path,
+        maxBytes=20 * 1024 * 1024,
+        backupCount=5,
+        encoding="utf-8",
+    )
+    file_handler.setFormatter(formatter)
+    root.addHandler(file_handler)
+
+    return log_path
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Proxy pipeline updater")
     parser.add_argument("--once", action="store_true", help="Run one sync and exit")
@@ -116,6 +147,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--echo-sql", action="store_true", help="Enable SQLAlchemy SQL echo")
     parser.add_argument("--lock-file", type=str, default="/tmp/proxy_pipeline_updater.lock", help="Single-process lock file path")
     parser.add_argument("--log-level", type=str, default="INFO", help="Logging level")
+    parser.add_argument("--log-dir", type=str, default=DEFAULT_LOG_DIR, help="Directory for updater logs")
+    parser.add_argument("--log-file", type=str, default=DEFAULT_LOG_FILE, help="Updater log filename")
     return parser
 
 
@@ -123,10 +156,8 @@ async def _run(args: argparse.Namespace):
     lock = ProcessLock(args.lock_file)
     lock.acquire()
 
-    logging.basicConfig(
-        level=getattr(logging, args.log_level.upper(), logging.INFO),
-        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    )
+    log_path = _configure_logging(args.log_level, args.log_dir, args.log_file)
+    logger.info("Logging to %s", log_path)
 
     client = build_default_client(echo_sql=args.echo_sql, deactivate_missing=args.deactivate_missing)
     updater = ProxyUpdater(
