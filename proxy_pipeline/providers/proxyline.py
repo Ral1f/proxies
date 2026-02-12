@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 
-from .base import BaseProvider, ProviderError
+from .base import BaseProvider
 from ..types import ProxySpec
+
+logger = logging.getLogger(__name__)
 
 
 class ProxyLineProvider(BaseProvider):
@@ -41,5 +44,5 @@ class ProxyLineProvider(BaseProvider):
 
         proxies = await self._with_retries(_do, label="ProxyLine")
         if not proxies:
-            raise ProviderError("ProxyLine: не удалось получить список прокси")
+            logger.info("ProxyLine: пул пустой, возвращено 0 прокси")
         return proxies

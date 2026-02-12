@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
 from .base import BaseProvider, ProviderError
 from ..types import ProxySpec
+
+logger = logging.getLogger(__name__)
 
 
 class MobileProxySpaceProvider(BaseProvider):
@@ -141,7 +144,7 @@ class MobileProxySpaceProvider(BaseProvider):
 
         proxies = await self._with_retries(_do, label="MobileProxySpace")
         if not proxies:
-            raise ProviderError("MobileProxySpace: не удалось получить список прокси")
+            logger.info("MobileProxySpace: пул пустой, возвращено 0 прокси")
         return proxies
 
     async def change_ip(

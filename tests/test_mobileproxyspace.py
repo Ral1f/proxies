@@ -71,6 +71,19 @@ async def test_fetch_raises_if_data_key_missing():
 
 
 @pytest.mark.asyncio
+async def test_fetch_returns_empty_list_for_empty_pool():
+    provider = MobileProxySpaceProvider(api_token="test-token")
+
+    async def fake_request_json(method, url, *, params=None, headers=None):
+        return {"data": []}
+
+    provider._request_json = fake_request_json  # type: ignore[method-assign]
+
+    proxies = await provider.fetch()
+    assert proxies == []
+
+
+@pytest.mark.asyncio
 async def test_change_ip_uses_proxy_key_from_change_ip_url():
     provider = MobileProxySpaceProvider(api_token="test-token")
 

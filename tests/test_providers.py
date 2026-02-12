@@ -53,6 +53,22 @@ async def test_proxyline_fetch_returns_normalized_proxyspecs():
 
 
 @pytest.mark.asyncio
+async def test_proxyline_fetch_returns_empty_list_for_empty_pool():
+    provider = ProxyLineProvider(
+        proxies_url="https://proxyline.example/api/proxies",
+        proxies_params={"orders": [123]},
+    )
+
+    async def fake_request_json(method, url, *, params=None, headers=None):
+        return {"results": []}
+
+    provider._request_json = fake_request_json  # type: ignore[method-assign]
+
+    proxies = await provider.fetch()
+    assert proxies == []
+
+
+@pytest.mark.asyncio
 async def test_proxy6_fetch_returns_normalized_proxyspecs():
     provider = Proxy6Provider(api_key="test-key", state="active")
 
@@ -107,3 +123,16 @@ async def test_proxy6_fetch_raises_on_api_error():
 
     with pytest.raises(ProviderError):
         await provider.fetch()
+
+
+@pytest.mark.asyncio
+async def test_proxy6_fetch_returns_empty_list_for_empty_pool():
+    provider = Proxy6Provider(api_key="test-key", state="active")
+
+    async def fake_request_json(method, url, *, params=None, headers=None):
+        return {"status": "yes", "list": {}}
+
+    provider._request_json = fake_request_json  # type: ignore[method-assign]
+
+    proxies = await provider.fetch()
+    assert proxies == []
