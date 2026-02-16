@@ -3,6 +3,7 @@ import pytest
 from proxy_pipeline.providers.base import ProviderError
 from proxy_pipeline.providers.proxy6 import Proxy6Provider
 from proxy_pipeline.providers.proxyline import ProxyLineProvider
+from proxy_pipeline.providers.proxywing import ProxyWingProvider
 
 
 @pytest.mark.asyncio
@@ -136,3 +137,77 @@ async def test_proxy6_fetch_returns_empty_list_for_empty_pool():
 
     proxies = await provider.fetch()
     assert proxies == []
+
+
+@pytest.mark.asyncio
+async def test_proxywing_fetch_parses_txt_file(tmp_path):
+    txt = tmp_path / "proxywing.txt"
+    txt.write_text(
+        "128.65.166.58:5900:XGOQD71594:V12IFL8Y\n"
+        "128.65.167.89:5557:XGOQD71594:V12IFL8Y\n"
+        "10.0.0.1:3128\n"
+    )
+
+    provider = ProxyWingProvider(file_path=str(txt))
+    proxies = await provider.fetch()
+
+    assert len(proxies) == 3
+    assert proxies[0].server == "128.65.166.58:5900"
+    assert proxies[0].username == "XGOQD71594"
+    assert proxies[0].password == "V12IFL8Y"
+    assert proxies[0].protocol == "http"
+
+    assert proxies[1].server == "128.65.167.89:5557"
+    assert proxies[1].username == "XGOQD71594"
+
+    assert proxies[2].server == "10.0.0.1:3128"
+    assert proxies[2].username is None
+    assert proxies[2].password is None
+
+
+@pytest.mark.asyncio
+async def test_proxywing_fetch_returns_empty_for_empty_file(tmp_path):
+    txt = tmp_path / "proxywing.txt"
+    txt.write_text("")
+
+    provider = ProxyWingProvider(file_path=str(txt))
+    proxies = await provider.fetch()
+    assert proxies == []
+
+
+@pytest.mark.asyncio
+async def test_proxywing_fetch_raises_on_missing_file(tmp_path):
+    provider = ProxyWingProvider(file_path=str(tmp_path / "nonexistent.txt"))
+
+    with pytest.raises(ProviderError):
+        await provider.fetch()
+
+
+@pytest.mark.asyncio
+async def test_proxywing_fetch_skips_invalid_lines(tmp_path):
+    txt = tmp_path / "proxywing.txt"
+    txt.write_text(
+        "128.65.166.58:5900:user:pass\n"
+        "badline\n"
+        "\n"
+        "10.0.0.1:8080:u:p\n"
+    )
+
+    provider = ProxyWingProvider(file_path=str(txt))
+    proxies = await provider.fetch()
+
+    assert len(proxies) == 2
+    assert proxies[0].server == "128.65.166.58:5900"
+    assert proxies[1].server == "10.0.0.1:8080"
+
+
+@pytest.mark.asyncio
+async def test_proxywing_fetch_respects_protocol(tmp_path):
+    txt = tmp_path / "proxywing.txt"
+    txt.write_text("1.1.1.1:1080:u:p\n")
+
+    provider = ProxyWingProvider(file_path=str(txt), protocol="socks5")
+    proxies = await provider.fetch()
+
+    assert len(proxies) == 1
+    assert proxies[0].protocol == "socks5"

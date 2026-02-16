@@ -12,6 +12,7 @@ class AppConfig:
     proxyline: Dict[str, Any]
     proxy6: Dict[str, Any]
     mobileproxyspace: Dict[str, Any]
+    proxywing: Dict[str, Any]
 
 
 def _load_module():
@@ -63,9 +64,14 @@ def load_config() -> AppConfig:
     if env_ids:
         mps_cfg["proxy_ids"] = env_ids
 
+    pw_cfg = dict(getattr(cfg, "PROXYWING", {}) or {})
+    pw_cfg["file_path"] = os.getenv("PROXYWING_FILE_PATH", pw_cfg.get("file_path"))
+    pw_cfg["protocol"] = os.getenv("PROXYWING_PROTOCOL", pw_cfg.get("protocol", "http"))
+
     return AppConfig(
         database_url=database_url,
         proxyline=proxyline_cfg,
         proxy6=proxy6_cfg,
         mobileproxyspace=mps_cfg,
+        proxywing=pw_cfg,
     )

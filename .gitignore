@@ -1,5 +1,6 @@
 # local secrets
 proxies_config.py
+proxywing.txt
 
 # python cache
 __pycache__/

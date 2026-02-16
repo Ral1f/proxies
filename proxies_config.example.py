@@ -19,3 +19,8 @@ MOBILEPROXYSPACE = {
     "proxy_ids": ["123", "456"],
     "command": "get_my_proxy",
 }
+
+PROXYWING = {
+    "file_path": "/path/to/proxywing.txt",
+    "protocol": "http",
+}

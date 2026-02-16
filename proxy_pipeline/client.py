@@ -5,7 +5,7 @@ from typing import Optional
 from .config import load_config
 from .db import create_engine_from_url, create_session_factory, init_db
 from .pipeline import ProxyPipeline
-from .providers import MobileProxySpaceProvider, Proxy6Provider, ProxyLineProvider
+from .providers import MobileProxySpaceProvider, Proxy6Provider, ProxyLineProvider, ProxyWingProvider
 from .repository import ProxyRepository
 
 
@@ -53,6 +53,9 @@ class ProxyClient:
     async def refresh_mobileproxyspace(self) -> int:
         return await self.pipeline.sync_provider("mobileproxyspace")
 
+    async def refresh_proxywing(self) -> int:
+        return await self.pipeline.sync_provider("proxywing")
+
     async def refresh_all(self):
         return await self.pipeline.sync_all()
 
@@ -80,6 +83,9 @@ class ProxyClient:
 
     async def get_random_mobileproxyspace(self, as_url: bool = True):
         return await self.get_random_proxy("mobileproxyspace", as_url=as_url)
+
+    async def get_random_proxywing(self, as_url: bool = True):
+        return await self.get_random_proxy("proxywing", as_url=as_url)
 
     async def ban_proxy(self, proxy_id: Optional[int] = None, server: Optional[str] = None, provider: Optional[str] = None) -> int:
         return await self.repository.ban_proxy(proxy_id=proxy_id, server=server, provider=provider)
@@ -150,6 +156,14 @@ def build_default_client(echo_sql: bool = False, deactivate_missing: bool = Fals
                 command=cfg.mobileproxyspace.get("command", "get_my_proxy"),
                 retries=cfg.mobileproxyspace.get("retries", 4),
                 timeout=cfg.mobileproxyspace.get("timeout", 15),
+            )
+        )
+
+    if cfg.proxywing.get("file_path"):
+        providers.append(
+            ProxyWingProvider(
+                file_path=cfg.proxywing.get("file_path"),
+                protocol=cfg.proxywing.get("protocol", "http"),
             )
         )
 
