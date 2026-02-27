@@ -11,18 +11,14 @@ requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.9",
     "SQLAlchemy>=2.0",
-    "aiosqlite>=0.19",
+    "asyncpg>=0.29",
 ]
 
 [project.optional-dependencies]
-postgres = ["asyncpg>=0.29"]
 test = [
     "pytest>=8",
     "pytest-asyncio>=0.23",
 ]
-
-[project.scripts]
-proxy-pipeline-updater = "proxy_pipeline.updater:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
