@@ -24,9 +24,6 @@ test = [
 [project.scripts]
 proxy-pipeline-updater = "proxy_pipeline.updater:main"
 
-[tool.setuptools]
-py-modules = ["proxies_config"]
-
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["proxy_pipeline*"]
