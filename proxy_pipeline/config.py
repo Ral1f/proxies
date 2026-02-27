@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 class AppConfig:
     database_url: str
     proxyline: Dict[str, Any]
+    proxyline_dedicated: Dict[str, Any]
     proxy6: Dict[str, Any]
     mobileproxyspace: Dict[str, Any]
     proxywing: Dict[str, Any]
@@ -53,6 +54,12 @@ def load_config() -> AppConfig:
     if env_params is not None:
         proxyline_cfg["proxies_params"] = env_params
 
+    proxyline_ded_cfg = dict(getattr(cfg, "PROXYLINE_DEDICATED", {}) or {})
+    proxyline_ded_cfg["proxies_url"] = os.getenv("PROXYLINE_DEDICATED_URL", proxyline_ded_cfg.get("proxies_url"))
+    env_ded_params = _get_env_json("PROXYLINE_DEDICATED_PARAMS")
+    if env_ded_params is not None:
+        proxyline_ded_cfg["proxies_params"] = env_ded_params
+
     proxy6_cfg = dict(getattr(cfg, "PROXY6", {}) or {})
     proxy6_cfg["api_key"] = os.getenv("PROXY6_API_KEY", proxy6_cfg.get("api_key"))
     proxy6_cfg["state"] = os.getenv("PROXY6_STATE", proxy6_cfg.get("state"))
@@ -71,6 +78,7 @@ def load_config() -> AppConfig:
     return AppConfig(
         database_url=database_url,
         proxyline=proxyline_cfg,
+        proxyline_dedicated=proxyline_ded_cfg,
         proxy6=proxy6_cfg,
         mobileproxyspace=mps_cfg,
         proxywing=pw_cfg,

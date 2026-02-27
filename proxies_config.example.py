@@ -20,6 +20,11 @@ MOBILEPROXYSPACE = {
     "command": "get_my_proxy",
 }
 
+PROXYLINE_DEDICATED = {
+    "proxies_url": "https://proxyline.example/api/proxies",
+    "proxies_params": {"orders": [0000000], "status": "active"}
+}
+
 PROXYWING = {
     "file_path": "/path/to/proxywing.txt",
     "protocol": "http",

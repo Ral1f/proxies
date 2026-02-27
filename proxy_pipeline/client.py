@@ -112,6 +112,14 @@ class ProxyClient:
             if not proxy_key and isinstance(meta.get("raw"), dict):
                 proxy_key = meta["raw"].get("proxy_key")
 
+        # Auto-discover: если ничего не передано — ищем в БД
+        if not proxy_key and not change_ip_url:
+            proxy = await self.repository.get_random(provider="mobileproxyspace")
+            if proxy and proxy.meta:
+                meta = proxy.meta
+                proxy_key = proxy_key or meta.get("proxy_key") or (meta.get("raw") or {}).get("proxy_key")
+                change_ip_url = change_ip_url or meta.get("change_ip_url")
+
         return await provider.change_ip(
             proxy_key=proxy_key,
             change_ip_url=change_ip_url,
@@ -134,6 +142,17 @@ def build_default_client(echo_sql: bool = False, deactivate_missing: bool = Fals
                 proxies_params=cfg.proxyline.get("proxies_params"),
                 retries=cfg.proxyline.get("retries", 4),
                 timeout=cfg.proxyline.get("timeout", 15),
+            )
+        )
+
+    if cfg.proxyline_dedicated.get("proxies_url"):
+        providers.append(
+            ProxyLineProvider(
+                name="proxyline_dedicated",
+                proxies_url=cfg.proxyline_dedicated.get("proxies_url"),
+                proxies_params=cfg.proxyline_dedicated.get("proxies_params"),
+                retries=cfg.proxyline_dedicated.get("retries", 4),
+                timeout=cfg.proxyline_dedicated.get("timeout", 15),
             )
         )
 

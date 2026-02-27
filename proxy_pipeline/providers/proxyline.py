@@ -12,10 +12,11 @@ logger = logging.getLogger(__name__)
 class ProxyLineProvider(BaseProvider):
     name = "proxyline"
 
-    def __init__(self, proxies_url: str, proxies_params: Optional[Dict[str, Any]] = None, retries: int = 4, timeout: int = 15):
+    def __init__(self, proxies_url: str, proxies_params: Optional[Dict[str, Any]] = None, retries: int = 4, timeout: int = 15, name: str = "proxyline"):
         if not proxies_url:
             raise ValueError("ProxyLine: требуется proxies_url")
         super().__init__(retries=retries, timeout=timeout)
+        self.name = name
         self.proxies_url = proxies_url
         self.proxies_params = proxies_params or {}
 
