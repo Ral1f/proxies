@@ -56,6 +56,6 @@ class BaseProvider:
                     exc,
                     exc_info=True,
                 )
-                await asyncio.sleep(0.6 * (2 ** attempt))
+                await asyncio.sleep(10)
 
         raise ProviderError(f"{label}: не удалось получить данные после {self.retries} попыток")
