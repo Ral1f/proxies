@@ -19,7 +19,7 @@ class ProviderError(RuntimeError):
 class BaseProvider:
     name = "base"
 
-    def __init__(self, retries: int = 4, timeout: int = 15):
+    def __init__(self, retries: int = 4, timeout: int = 60):
         self.retries = retries
         self.timeout = timeout
 
@@ -39,7 +39,9 @@ class BaseProvider:
         async with aiohttp.ClientSession(timeout=timeout, headers=headers, connector=connector) as session:
             async with session.request(method, url, params=params) as resp:
                 resp.raise_for_status()
-                return await resp.json(content_type=None)
+                response_json = await resp.json(content_type=None)
+                logger.info(response_json)
+                return response_json
 
     async def _with_retries(self, fn, *, label: str):
         for attempt in range(self.retries):

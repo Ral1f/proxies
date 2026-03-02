@@ -172,7 +172,7 @@ class MobileProxySpaceProvider(BaseProvider):
 
         async def _do():
             data = await self._request_json("GET", url, params=params, headers=headers)
-            if data.get("status") != "ok" or data.get("code") != 200:
+            if data.get("status") != "OK" or data.get("code") != 200:
                 raise ProviderError(
                     f"MobileProxySpace change_ip: "
                     f"code={data.get('code')}, message={data.get('message')}"
