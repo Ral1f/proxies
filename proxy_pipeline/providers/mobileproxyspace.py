@@ -171,6 +171,12 @@ class MobileProxySpaceProvider(BaseProvider):
         url = base_url or self.default_change_ip_url
 
         async def _do():
-            return await self._request_json("GET", url, params=params, headers=headers)
+            data = await self._request_json("GET", url, params=params, headers=headers)
+            if data.get("status") != "ok" or data.get("code") != 200:
+                raise ProviderError(
+                    f"MobileProxySpace change_ip: "
+                    f"code={data.get('code')}, message={data.get('message')}"
+                )
+            return data
 
         return await self._with_retries(_do, label="MobileProxySpace change_ip")
