@@ -56,7 +56,6 @@ class BaseProvider:
                     attempt + 1,
                     self.retries,
                     exc,
-                    exc_info=True,
                 )
                 await asyncio.sleep(10)
 
