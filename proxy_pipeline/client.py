@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 from typing import Optional
 
 from .config import load_config
@@ -7,6 +9,13 @@ from .db import create_engine_from_url, create_session_factory, init_db
 from .pipeline import ProxyPipeline
 from .providers import MobileProxySpaceProvider, Proxy6Provider, ProxyLineProvider, ProxyWingProvider
 from .repository import ProxyRepository
+
+logger = logging.getLogger(__name__)
+
+# Distributed cooldown для reload_mobileproxyspace — предотвращает конфликты
+# параллельных reload'ов от разных потребителей одной mobile-прокси.
+RELOAD_LOCK_TTL_SEC = 30      # минимум между reload'ами одной IP
+POST_RELOAD_SLEEP_SEC = 10    # дать новой IP стабилизироваться после change_ip
 
 
 class ProxyClient:
@@ -120,11 +129,53 @@ class ProxyClient:
                 proxy_key = proxy_key or meta.get("proxy_key") or (meta.get("raw") or {}).get("proxy_key")
                 change_ip_url = change_ip_url or meta.get("change_ip_url")
 
-        return await provider.change_ip(
+        # Distributed cooldown: первый кто захочет reload — берёт лок в Redis,
+        # остальные параллельные попытки за RELOAD_LOCK_TTL_SEC получают no-op.
+        # Если Redis недоступен — просто пропускаем защиту (логируем и продолжаем).
+        lock_id = proxy_key or change_ip_url or "unknown"
+        skipped = await self._try_cooldown_lock(lock_id)
+        if skipped:
+            return {"skipped": True, "reason": "cooldown_active", "proxy_key": proxy_key}
+
+        result = await provider.change_ip(
             proxy_key=proxy_key,
             change_ip_url=change_ip_url,
             user_agent=user_agent,
         )
+
+        # Дать новой IP стабилизироваться (mobileproxyspace меняет IP не мгновенно)
+        await asyncio.sleep(POST_RELOAD_SLEEP_SEC)
+        return result
+
+    @staticmethod
+    async def _try_cooldown_lock(lock_id: str) -> bool:
+        """Пытается взять distributed-лок через Redis.
+
+        Возвращает True если другой потребитель только что брал лок (надо skip),
+        False — лок взят, можно делать reload.
+        """
+        try:
+            from redis.asyncio import Redis as _AsyncRedis
+        except Exception:
+            return False  # redis-py не установлен — не блокируем
+        redis = _AsyncRedis(host="127.0.0.1", port=6379)
+        try:
+            key = f"mps:reload_lock:{lock_id}"
+            acquired = await redis.set(key, "1", nx=True, ex=RELOAD_LOCK_TTL_SEC)
+            if not acquired:
+                logger.info(
+                    "reload_mobileproxyspace skipped: cooldown active (%s)", lock_id,
+                )
+                return True
+            return False
+        except Exception:
+            logger.warning("Redis cooldown недоступен, reload без защиты", exc_info=True)
+            return False
+        finally:
+            try:
+                await redis.aclose()
+            except Exception:
+                pass
 
 
 def build_default_client(echo_sql: bool = False, deactivate_missing: bool = False) -> ProxyClient:
