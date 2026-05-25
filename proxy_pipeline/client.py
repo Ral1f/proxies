@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Optional
 
 from .config import load_config
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 # параллельных reload'ов от разных потребителей одной mobile-прокси.
 RELOAD_LOCK_TTL_SEC = 30      # минимум между reload'ами одной IP
 POST_RELOAD_SLEEP_SEC = 10    # дать новой IP стабилизироваться после change_ip
+# Ключ Redis для broadcast уведомлений: после успешного change_ip пишется
+# timestamp. Все потребители mobileproxyspace polling-ят этот ключ и
+# пересоздают свою AsyncSession чтобы дропнуть stale TCP-соединения.
+RELOAD_TS_KEY = "mps:last_reload_ts"
 
 
 class ProxyClient:
@@ -143,9 +148,31 @@ class ProxyClient:
             user_agent=user_agent,
         )
 
+        # Broadcast уведомление: publish timestamp в Redis. Все потребители
+        # MPS polling-ят этот ключ и пересоздают AsyncSession чтобы дропнуть
+        # stale TCP-соединения к старому upstream IP.
+        await self._publish_reload_ts()
+
         # Дать новой IP стабилизироваться (mobileproxyspace меняет IP не мгновенно)
         await asyncio.sleep(POST_RELOAD_SLEEP_SEC)
         return result
+
+    @staticmethod
+    async def _publish_reload_ts() -> None:
+        try:
+            from redis.asyncio import Redis as _AsyncRedis
+        except Exception:
+            return
+        redis = _AsyncRedis(host="127.0.0.1", port=6379)
+        try:
+            await redis.set(RELOAD_TS_KEY, str(time.time()))
+        except Exception:
+            logger.warning("Не удалось опубликовать reload-ts в Redis", exc_info=True)
+        finally:
+            try:
+                await redis.aclose()
+            except Exception:
+                pass
 
     @staticmethod
     async def _try_cooldown_lock(lock_id: str) -> bool:
